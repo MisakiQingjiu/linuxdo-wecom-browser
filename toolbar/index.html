@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Linux DO · 企业微信外观</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font: 13px/1 "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f7f8fa;
+    user-select: none;
+    overflow: hidden;
+  }
+  #bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 44px;
+    /* 右侧留出原生窗口控制按钮（最小化/最大化/关闭）的区域 */
+    padding: 0 150px 0 10px;
+    border-bottom: 1px solid #e3e5e8;
+    background: #f7f8fa;
+    /* 无系统标题栏后，顶栏即为拖拽区 */
+    -webkit-app-region: drag;
+  }
+  #bar button,
+  #bar input,
+  #bar span {
+    -webkit-app-region: no-drag;
+  }
+  button {
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #4e5969;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  button:hover:not(:disabled) { background: #eceef1; color: #1d2129; }
+  button:disabled { color: #c2c7cf; cursor: default; }
+  #url {
+    flex: 1;
+    height: 30px;
+    border: 1px solid #e3e5e8;
+    border-radius: 15px;
+    padding: 0 14px;
+    font-size: 13px;
+    color: #1d2129;
+    background: #fff;
+    outline: none;
+    min-width: 80px;
+  }
+  #url:focus { border-color: #07c160; box-shadow: 0 0 0 2px rgba(7, 193, 96, .15); }
+  #badge {
+    flex: none;
+    height: 22px;
+    margin-left: 4px;
+    padding: 0 8px;
+    border-radius: 11px;
+    background: #07c160;
+    color: #fff;
+    font-size: 11px;
+    line-height: 22px;
+    white-space: nowrap;
+  }
+  #progress {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    height: 2px;
+    width: 0;
+    background: #07c160;
+  }
+  body.loading #progress { animation: ind 1.2s ease-out infinite; }
+  @keyframes ind {
+    0% { left: 0; width: 0; }
+    60% { width: 40%; }
+    100% { left: 100%; width: 0; }
+  }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <button id="back" title="后退 (Alt+←)">←</button>
+    <button id="forward" title="前进 (Alt+→)">→</button>
+    <button id="reload" title="刷新 (Ctrl+R)">⟳</button>
+    <input id="url" spellcheck="false" placeholder="输入网址，或输入关键词在 linux.do 搜索">
+    <button id="ext" title="在系统浏览器打开当前页 (Ctrl+Shift+O)">↗</button>
+    <span id="badge" title="内置脚本：linuxdo-wecom.user.js（Linux DO · 企业微信 IM 外观）">企微外观</span>
+    <div id="progress"></div>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const input = $('url');
+    let lastState = { url: '', loading: false };
+
+    $('back').addEventListener('click', () => browserChrome.back());
+    $('forward').addEventListener('click', () => browserChrome.forward());
+
+    function syncReloadButton() {
+      const btn = $('reload');
+      btn.textContent = lastState.loading ? '✕' : '⟳';
+      btn.title = lastState.loading ? '停止加载 (Esc 在地址栏时无效)' : '刷新 (Ctrl+R)';
+    }
+
+    $('reload').addEventListener('click', () => {
+      if (lastState.loading) browserChrome.stop();
+      else browserChrome.reload();
+    });
+
+    $('ext').addEventListener('click', () => {
+      if (lastState.url) browserChrome.openExternal(lastState.url);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        browserChrome.navigate(input.value);
+        input.blur();
+      } else if (e.key === 'Escape') {
+        input.blur();
+      }
+    });
+    input.addEventListener('focus', () => input.select());
+
+    browserChrome.onState((s) => {
+      lastState = s;
+      if (document.activeElement !== input) input.value = s.url || '';
+      $('back').disabled = !s.canBack;
+      $('forward').disabled = !s.canForward;
+      document.body.classList.toggle('loading', !!s.loading);
+      syncReloadButton();
+    });
+    syncReloadButton();
+  </script>
+</body>
+</html>
