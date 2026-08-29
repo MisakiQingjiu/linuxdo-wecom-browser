@@ -312,8 +312,9 @@ app.whenReady().then(() => {
   registerIpc();
   buildMenu();
 
-  // 支持命令行直接带一个 URL 启动：npm start -- https://linux.do/t/...
-  const argUrl = process.argv.slice(2).find((a) => /^https?:\/\//i.test(a));
+  // 支持命令行直接带一个 URL 启动：npm start -- https://linux.do/t/...（打包后为 exe 路径后的第一个参数）
+  const argSource = app.isPackaged ? process.argv.slice(1) : process.argv.slice(2);
+  const argUrl = argSource.find((a) => /^https?:\/\//i.test(a));
   createMainWindow(argUrl || HOME_URL, ses, preloadFile);
 
   app.on('activate', () => {

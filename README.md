@@ -40,6 +40,18 @@ npm start -- https://linux.do/t/topic/12345
 - HTML5 全屏（视频）自动隐藏工具栏
 - 单实例运行，重复启动唤起已有窗口
 
+## 打包为 exe
+
+```bash
+npm run dist
+```
+
+- 产物：`release/LinuxDO-WeCom-Browser-<version>-Portable.exe`（约 95MB，免安装单文件，双击即用）
+- 解包目录版（启动更快）在 `release/win-unpacked/LinuxDO WeCom Browser.exe`
+- 下载走 npmmirror 镜像：`.npmrc` 里的 `electron_mirror`，以及构建时的环境变量 `ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/`
+- exe 未做代码签名，第一次在其他电脑上运行可能遇到 SmartScreen 提示，选择"仍要运行"即可
+- 打包版与开发版共用同一 userData 目录，登录态互通
+
 ## 目录结构
 
 ```text

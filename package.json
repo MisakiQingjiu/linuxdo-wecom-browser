@@ -5,10 +5,42 @@
   "description": "内置 linuxdo-wecom.user.js（Linux DO · 企业微信 IM 外观）的 Electron 轻量浏览器，专为 linux.do 定制",
   "main": "main.js",
   "private": true,
+  "author": "MisakiQingjiu",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
   },
   "devDependencies": {
-    "electron": "^44.0.0"
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.linuxdo.wecom.browser",
+    "productName": "LinuxDO WeCom Browser",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "toolbar/**/*",
+      "vendor/**/*",
+      "package.json"
+    ],
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "LinuxDO-WeCom-Browser-${version}-Portable.exe"
+    }
   }
 }
