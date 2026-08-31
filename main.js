@@ -17,6 +17,9 @@ const fs = require('fs');
 
 const HOME_URL = 'https://linux.do/';
 const TOOLBAR_HEIGHT = 44;
+// 锁定企微 IM 视图：注入时强制回 IM 模式（防止误入原生视图），并把脚本聊天头部的
+// 「切换原生视图」按钮改造为「复制当前链接」。想恢复脚本原始行为改为 false 后重启即可。
+const LOCK_IM_VIEW = true;
 
 app.setName('LinuxDO WeCom Browser');
 app.setAppUserModelId('com.linuxdo.wecom.browser');
@@ -71,10 +74,63 @@ function buildUserscriptPreload() {
   const src = fs.readFileSync(path.join(__dirname, 'vendor', 'linuxdo-wecom.user.js'), 'utf8');
   const file = path.join(app.getPath('userData'), 'linuxdo-wecom.preload.js');
   const match = '/^https:\\/\\/([a-z0-9-]+\\.)*linux\\.do(:\\d+)?(\\/|$)/i';
+  // 集成层补丁：跟随 userscript 在同一守卫内执行。
+  // 点击拦截用 document 捕获阶段，先于脚本绑定在会话面板上的冒泡处理（setViewMode+reload）。
+  const patch = LOCK_IM_VIEW
+    ? `
+/* ---- 集成层补丁：锁定 IM 视图；「切换原生视图」按钮改为复制当前链接 ---- */
+(function () {
+  try { localStorage.setItem('linuxdo-wecom-view', 'im'); } catch (e) { /* ignore */ }
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;z-index:2147483647;left:50%;top:20%;transform:translateX(-50%);padding:8px 18px;border-radius:8px;background:rgba(20,22,25,.82);color:#fff;font-size:13px;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; }, 900);
+    setTimeout(function () { t.remove(); }, 1400);
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+    ta.remove();
+  }
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    var btn = target && target.closest ? target.closest('.wecom-chat-native') : null;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var url = location.href;
+    var ok = function () { toast('链接已复制'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(ok, function () { fallbackCopy(url); ok(); });
+    } else {
+      fallbackCopy(url);
+      ok();
+    }
+  }, true);
+  function fixTitles() {
+    var list = document.querySelectorAll('.wecom-chat-native');
+    for (var i = 0; i < list.length; i++) list[i].title = '复制当前链接';
+  }
+  function startTitleFix() {
+    fixTitles();
+    setInterval(fixTitles, 2500);
+  }
+  if (document.body) startTitleFix();
+  else document.addEventListener('DOMContentLoaded', startTitleFix);
+})();
+`
+    : '';
   const code = `/* 由 main.js 在启动时从 vendor/linuxdo-wecom.user.js 自动生成，请勿手工修改。 */
 if (${match}.test(location.href) && !window.__LINUXDO_WECOM_INJECTED__) {
   window.__LINUXDO_WECOM_INJECTED__ = true;
 ${src}
+${patch}
 }
 `;
   fs.mkdirSync(path.dirname(file), { recursive: true });
