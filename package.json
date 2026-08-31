@@ -1,7 +1,7 @@
 {
   "name": "linuxdo-wecom-browser",
   "productName": "LinuxDO WeCom Browser",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "内置 linuxdo-wecom.user.js（Linux DO · 企业微信 IM 外观）的 Electron 轻量浏览器，专为 linux.do 定制",
   "main": "main.js",
   "private": true,
